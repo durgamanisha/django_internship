@@ -1,17 +1,16 @@
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from telegram import Update, Bot
+from .bot import start
+import json
+from django.conf import settings
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .serializers import UserSerializer
+bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
-class PublicView(APIView):
-    permission_classes = [AllowAny]
-    def get(self, request):
-        return Response({"message": "Hello, world!"})
-
-class ProtectedView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response({"user": serializer.data})
+@csrf_exempt
+def webhook(request):
+    payload = json.loads(request.body)
+    update = Update.de_json(payload, bot)
+    import asyncio
+    asyncio.run(start(update, None))
+    return HttpResponse(status=200)
